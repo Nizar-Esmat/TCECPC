@@ -49,9 +49,9 @@ export class TeamsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({
-    summary: 'List/search teams, optionally filtered by hall/teamNumber',
+    summary:
+      'List/search teams, optionally filtered by hall/teamNumber (open — no login required, used by the public request form)',
   })
   findAll(@Query() query: FindTeamsQueryDto): Promise<TeamResponseDto[]> {
     return this.teamsService.findAll(query);
