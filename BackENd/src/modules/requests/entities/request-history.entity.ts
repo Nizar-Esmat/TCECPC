@@ -12,12 +12,12 @@ export class RequestHistory extends AbstractEntity {
   @Column({ type: 'uuid' })
   requestId: string;
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'changed_by' })
-  changedBy: User;
+  changedBy: User | null;
 
-  @Column({ type: 'uuid', name: 'changed_by' })
-  changedById: string;
+  @Column({ type: 'uuid', name: 'changed_by', nullable: true })
+  changedById: string | null;
 
   @Column({ type: 'enum', enum: RequestStatus })
   status: RequestStatus;

@@ -31,7 +31,7 @@ export class RequestsService {
 
   async create(
     dto: CreateRequestDto,
-    leader: AuthenticatedUser,
+    creator?: AuthenticatedUser,
   ): Promise<RequestResponseDto> {
     const requestId = await this.requestsRepository.manager.transaction(
       async (manager) => {
@@ -52,7 +52,7 @@ export class RequestsService {
         await this.recordHistory(
           manager,
           saved.id,
-          leader.id,
+          creator?.id ?? null,
           RequestStatus.WAITING,
         );
         return saved.id;
@@ -306,7 +306,7 @@ export class RequestsService {
   private async recordHistory(
     manager: EntityManager,
     requestId: string,
-    changedById: string,
+    changedById: string | null,
     status: RequestStatus,
   ): Promise<void> {
     await manager.insert(RequestHistory, { requestId, changedById, status });

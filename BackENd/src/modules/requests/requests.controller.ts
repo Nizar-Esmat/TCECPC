@@ -15,6 +15,7 @@ import { UserRole } from '../../common/enums/user-role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestResponseDto } from './dto/request-response.dto';
 import { RequestsService } from './requests.service';
@@ -26,14 +27,16 @@ export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.LEADER)
-  @ApiOperation({ summary: 'Create an escort request (Leader only)' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({
+    summary:
+      'Create an escort request — open to anyone, no login required; attributed to the caller if a valid token is provided',
+  })
   create(
     @Body() dto: CreateRequestDto,
-    @CurrentUser() leader: AuthenticatedUser,
+    @CurrentUser() creator?: AuthenticatedUser,
   ): Promise<RequestResponseDto> {
-    return this.requestsService.create(dto, leader);
+    return this.requestsService.create(dto, creator);
   }
 
   // --- static-segment GETs MUST be declared before ':id' below ---
