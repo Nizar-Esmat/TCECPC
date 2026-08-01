@@ -1,9 +1,11 @@
 import { client } from './client';
 import type { RequestDto } from '../types/models';
-import type { RequestType } from '../types/enums';
+import type { Gender, Hall, RequestType } from '../types/enums';
 
 export interface CreateRequestPayload {
-  teamId: string;
+  hall: Hall;
+  teamNumber: number;
+  gender: Gender;
   requestType: RequestType;
   priority?: number;
 }

@@ -32,6 +32,12 @@ export const RequestStatus = {
 } as const;
 export type RequestStatus = (typeof RequestStatus)[keyof typeof RequestStatus];
 
+export const Gender = {
+  MALE: 'MALE',
+  FEMALE: 'FEMALE',
+} as const;
+export type Gender = (typeof Gender)[keyof typeof Gender];
+
 export const Hall = {
   HALL_1: 'HALL_1',
   HALL_2: 'HALL_2',

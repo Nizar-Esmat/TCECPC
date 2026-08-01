@@ -26,7 +26,7 @@ export class NotificationsService {
     this.eventsGateway.emitRequestCreated(dto);
     await this.notifyLeaders(
       NotificationType.REQUEST_CREATED,
-      `New ${dto.requestType} request for Team ${dto.team.teamNumber} (${dto.team.hall})`,
+      `New ${dto.requestType} request for Team ${dto.teamNumber} (${dto.hall})`,
       dto.id,
     );
   }
@@ -38,9 +38,8 @@ export class NotificationsService {
     this.eventsGateway.emitRequestAssigned(dto);
     await this.createAndPush(
       dto.volunteer.id,
-      UserRole.VOLUNTEER,
       NotificationType.REQUEST_ASSIGNED,
-      `You have been assigned a ${dto.requestType} request for Team ${dto.team.teamNumber} (${dto.team.hall})`,
+      `You have been assigned a ${dto.requestType} request for Team ${dto.teamNumber} (${dto.hall})`,
       dto.id,
     );
   }
@@ -52,9 +51,8 @@ export class NotificationsService {
     this.eventsGateway.emitRequestUnassigned(dto, previousVolunteerId);
     await this.createAndPush(
       previousVolunteerId,
-      UserRole.VOLUNTEER,
       NotificationType.REQUEST_UNASSIGNED,
-      `You are no longer assigned to the ${dto.requestType} request for Team ${dto.team.teamNumber} (${dto.team.hall})`,
+      `You are no longer assigned to the ${dto.requestType} request for Team ${dto.teamNumber} (${dto.hall})`,
       dto.id,
     );
   }
@@ -63,7 +61,7 @@ export class NotificationsService {
     this.eventsGateway.emitRequestUpdated(dto);
     await this.notifyLeaders(
       NotificationType.REQUEST_COMPLETED,
-      `${dto.requestType} request for Team ${dto.team.teamNumber} (${dto.team.hall}) was completed`,
+      `${dto.requestType} request for Team ${dto.teamNumber} (${dto.hall}) was completed`,
       dto.id,
     );
   }
@@ -72,7 +70,7 @@ export class NotificationsService {
     this.eventsGateway.emitRequestUpdated(dto);
     await this.notifyLeaders(
       NotificationType.REQUEST_CANCELLED,
-      `${dto.requestType} request for Team ${dto.team.teamNumber} (${dto.team.hall}) was cancelled`,
+      `${dto.requestType} request for Team ${dto.teamNumber} (${dto.hall}) was cancelled`,
       dto.id,
     );
   }
@@ -134,19 +132,12 @@ export class NotificationsService {
       where: { role: UserRole.LEADER },
     });
     for (const leader of leaders) {
-      await this.createAndPush(
-        leader.id,
-        UserRole.LEADER,
-        type,
-        message,
-        requestId,
-      );
+      await this.createAndPush(leader.id, type, message, requestId);
     }
   }
 
   private async createAndPush(
     recipientId: string,
-    recipientRole: UserRole,
     type: NotificationType,
     message: string,
     requestId: string,
@@ -159,7 +150,6 @@ export class NotificationsService {
     });
     const saved = await this.notificationsRepository.save(created);
     this.eventsGateway.emitNotification(
-      recipientRole,
       recipientId,
       new NotificationResponseDto(saved),
     );

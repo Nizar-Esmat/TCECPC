@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Gender } from '../../../common/enums/gender.enum';
+import { Hall } from '../../../common/enums/hall.enum';
 import { RequestStatus } from '../../../common/enums/request-status.enum';
 import { RequestType } from '../../../common/enums/request-type.enum';
-import { TeamResponseDto } from '../../teams/dto/team-response.dto';
 import { UserResponseDto } from '../../users/dto/user-response.dto';
 import { Request } from '../entities/request.entity';
 
@@ -9,8 +10,14 @@ export class RequestResponseDto {
   @ApiProperty()
   id: string;
 
-  @ApiProperty({ type: TeamResponseDto })
-  team: TeamResponseDto;
+  @ApiProperty({ enum: Hall })
+  hall: Hall;
+
+  @ApiProperty()
+  teamNumber: number;
+
+  @ApiProperty({ enum: Gender })
+  gender: Gender;
 
   @ApiProperty({ type: UserResponseDto, nullable: true })
   volunteer: UserResponseDto | null;
@@ -41,7 +48,9 @@ export class RequestResponseDto {
 
   constructor(request: Request) {
     this.id = request.id;
-    this.team = new TeamResponseDto(request.team);
+    this.hall = request.hall;
+    this.teamNumber = request.teamNumber;
+    this.gender = request.gender;
     this.volunteer = request.volunteer
       ? new UserResponseDto(request.volunteer)
       : null;

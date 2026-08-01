@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types/enums';
 import { NotificationsBell } from './NotificationsBell';
 import { cn } from '../../utils/cn';
+import logo from '../../assets/ECPC_Logo.jpg';
 
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -22,8 +23,11 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <NavLink to="/" className="text-base font-bold tracking-tight text-slate-900">
-          TCECPC <span className="text-indigo-600">Dispatch</span>
+        <NavLink to="/" className="flex items-center gap-2 text-base font-bold tracking-tight text-slate-900">
+          <img src={logo} alt="ECPC" className="h-8 w-8 rounded-md object-contain" />
+          <span>
+            Movement <span className="text-indigo-600">Controller</span>
+          </span>
         </NavLink>
 
         <nav className="flex items-center gap-1">

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Badge } from '../ui/Badge';
 import { VolunteerStatusBadge } from './VolunteerStatusBadge';
 import { Select } from '../ui/Select';
+import { Button } from '../ui/Button';
 import type { UserDto } from '../../types/models';
 import { UserRole, VolunteerStatus } from '../../types/enums';
 import { timeAgo } from '../../utils/formatters';
@@ -10,9 +11,15 @@ interface UsersTableProps {
   users: UserDto[];
   onStatusChange: (id: string, status: VolunteerStatus) => void;
   onCapacityChange: (id: string, capacity: number) => void;
+  onDelete: (id: string) => void;
 }
 
-export function UsersTable({ users, onStatusChange, onCapacityChange }: UsersTableProps) {
+export function UsersTable({
+  users,
+  onStatusChange,
+  onCapacityChange,
+  onDelete,
+}: UsersTableProps) {
   const [capacityDrafts, setCapacityDrafts] = useState<Record<string, number>>({});
 
   return (
@@ -26,6 +33,7 @@ export function UsersTable({ users, onStatusChange, onCapacityChange }: UsersTab
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3">Capacity</th>
             <th className="px-4 py-3">Created</th>
+            <th className="px-4 py-3" />
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -67,6 +75,11 @@ export function UsersTable({ users, onStatusChange, onCapacityChange }: UsersTab
                 )}
               </td>
               <td className="px-4 py-3 text-xs text-slate-400">{timeAgo(u.createdAt)}</td>
+              <td className="px-4 py-3 text-right">
+                <Button variant="danger" size="sm" onClick={() => onDelete(u.id)}>
+                  Delete
+                </Button>
+              </td>
             </tr>
           ))}
         </tbody>

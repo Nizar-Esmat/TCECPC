@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Card } from '../ui/Card';
 import { StatusBadge } from './StatusBadge';
 import type { RequestDto } from '../../types/models';
-import { formatRequestType, formatTeam, timeAgo } from '../../utils/formatters';
+import { formatGender, formatRequestType, formatTeam, timeAgo } from '../../utils/formatters';
 
 export function RequestCard({
   request,
@@ -16,9 +16,11 @@ export function RequestCard({
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-slate-900">
-            {formatTeam(request.team.hall, request.team.teamNumber)}
+            {formatTeam(request.hall, request.teamNumber)}
           </p>
-          <p className="text-sm text-slate-500">{formatRequestType(request.requestType)}</p>
+          <p className="text-sm text-slate-500">
+            {formatRequestType(request.requestType)} · {formatGender(request.gender)}
+          </p>
         </div>
         <StatusBadge status={request.status} />
       </div>

@@ -9,12 +9,12 @@ import { DatabaseModule } from './database/database.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { UsersModule } from './modules/users/users.module';
-import { TeamsModule } from './modules/teams/teams.module';
 import { RequestsModule } from './modules/requests/requests.module';
 import { AssignmentModule } from './modules/assignment/assignment.module';
 import { EventsModule } from './modules/events/events.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -26,12 +26,12 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     DatabaseModule,
     AuthModule,
     UsersModule,
-    TeamsModule,
     RequestsModule,
     AssignmentModule,
     EventsModule,
     NotificationsModule,
     DashboardModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

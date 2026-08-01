@@ -16,6 +16,14 @@ import { NotificationResponseDto } from '../notifications/dto/notification-respo
 
 const LEADERS_ROOM = 'leaders';
 const volunteerRoom = (id: string) => `volunteer:${id}`;
+// Every connected user (either role) joins their own personal room too —
+// "notification" is inherently a per-recipient object (one DB row per
+// recipient, with its own id/read-state), so it must always be delivered
+// point-to-point here, never via the shared LEADERS_ROOM broadcast. Routing
+// it through LEADERS_ROOM was the bug: with N leader accounts, notifyLeaders()
+// creates one row per leader and each push fanned out to every connected
+// leader via the shared room, so everyone saw N copies instead of their own 1.
+const personalRoom = (id: string) => `user:${id}`;
 
 type AuthenticatedSocket = Omit<Socket, 'data'> & {
   data: { user: AuthenticatedUser };
@@ -49,6 +57,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           ? LEADERS_ROOM
           : volunteerRoom(payload.sub),
       );
+      await client.join(personalRoom(payload.sub));
       this.logger.log(`Client connected: ${payload.code} (${payload.role})`);
     } catch {
       this.logger.warn(`Rejected socket connection: ${client.id}`);
@@ -91,15 +100,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   emitNotification(
-    recipientRole: UserRole,
     recipientId: string,
     notification: NotificationResponseDto,
   ): void {
-    const room =
-      recipientRole === UserRole.LEADER
-        ? LEADERS_ROOM
-        : volunteerRoom(recipientId);
-    this.emit(room, 'notification', notification);
+    this.emit(personalRoom(recipientId), 'notification', notification);
   }
 
   // The socket.io server only exists once this gateway has been bootstrapped

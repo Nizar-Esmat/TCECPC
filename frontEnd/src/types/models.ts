@@ -1,4 +1,5 @@
 import type {
+  Gender,
   Hall,
   NotificationType,
   RequestStatus,
@@ -6,14 +7,6 @@ import type {
   UserRole,
   VolunteerStatus,
 } from './enums';
-
-export interface TeamDto {
-  id: string;
-  hall: Hall;
-  teamNumber: number;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface UserDto {
   id: string;
@@ -29,7 +22,9 @@ export interface UserDto {
 
 export interface RequestDto {
   id: string;
-  team: TeamDto;
+  hall: Hall;
+  teamNumber: number;
+  gender: Gender;
   volunteer: UserDto | null;
   requestType: RequestType;
   status: RequestStatus;
@@ -76,7 +71,6 @@ export interface HallBreakdown {
 export interface DashboardOverviewDto {
   requests: RequestCounts;
   volunteers: VolunteerCounts;
-  teamCount: number;
   perHall: HallBreakdown[];
 }
 

@@ -13,6 +13,7 @@ interface UsersState {
   create: (payload: CreateUserPayload) => Promise<UserDto>;
   updateStatus: (id: string, status: VolunteerStatus) => Promise<void>;
   updateCapacity: (id: string, capacity: number) => Promise<void>;
+  remove: (id: string) => Promise<void>;
   patchOne: (user: UserDto) => void;
   clearLastCreatedCode: () => void;
 }
@@ -50,6 +51,11 @@ export const useUsersStore = create<UsersState>((set, get) => ({
   updateCapacity: async (id, capacity) => {
     const updated = await usersApi.updateUserCapacity(id, capacity);
     get().patchOne(updated);
+  },
+
+  remove: async (id) => {
+    await usersApi.deleteUser(id);
+    set({ users: get().users.filter((u) => u.id !== id) });
   },
 
   patchOne: (user) => {

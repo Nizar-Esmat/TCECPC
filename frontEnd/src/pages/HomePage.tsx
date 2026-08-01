@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
-import { Spinner } from '../components/ui/Spinner';
-import { useTeamsStore } from '../stores/teams.store';
+import { Input } from '../components/ui/Input';
 import { useRequestsStore } from '../stores/requests.store';
-import { RequestType } from '../types/enums';
-import type { RequestDto } from '../types/models';
-import { formatHall, formatRequestType, formatTeam } from '../utils/formatters';
+import { Gender, Hall, RequestType } from '../types/enums';
+import { formatGender, formatHall, formatTeam } from '../utils/formatters';
 
 const REQUEST_TYPE_OPTIONS: { type: RequestType; label: string; icon: string }[] = [
   { type: RequestType.BATHROOM, label: 'Bathroom', icon: '🚻' },
@@ -17,75 +15,51 @@ const REQUEST_TYPE_OPTIONS: { type: RequestType; label: string; icon: string }[]
   { type: RequestType.OTHER, label: 'Other', icon: '✋' },
 ];
 
+const GENDER_OPTIONS = Object.values(Gender);
+
+const HALL_OPTIONS = Object.values(Hall);
+
 export function HomePage() {
-  const teams = useTeamsStore((s) => s.teams);
-  const teamsLoading = useTeamsStore((s) => s.loading);
-  const fetchTeams = useTeamsStore((s) => s.fetch);
   const createRequest = useRequestsStore((s) => s.create);
 
   const [hall, setHall] = useState('');
-  const [teamId, setTeamId] = useState('');
+  const [teamNumber, setTeamNumber] = useState('');
+  const [gender, setGender] = useState<Gender | null>(null);
   const [requestType, setRequestType] = useState<RequestType | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState<RequestDto | null>(null);
 
-  useEffect(() => {
-    void fetchTeams();
-  }, [fetchTeams]);
-
-  const halls = useMemo(() => {
-    const unique = Array.from(new Set(teams.map((t) => t.hall)));
-    return unique.sort();
-  }, [teams]);
-
-  const teamsInHall = useMemo(
-    () => teams.filter((t) => t.hall === hall).sort((a, b) => a.teamNumber - b.teamNumber),
-    [teams, hall],
-  );
-
-  const canSubmit = Boolean(teamId && requestType) && !submitting;
+  const parsedTeamNumber = Number(teamNumber);
+  const canSubmit =
+    Boolean(hall) &&
+    Boolean(gender) &&
+    Boolean(requestType) &&
+    Number.isInteger(parsedTeamNumber) &&
+    parsedTeamNumber > 0 &&
+    !submitting;
 
   const handleSubmit = async () => {
-    if (!teamId || !requestType) return;
+    if (!hall || !gender || !requestType || !canSubmit) return;
     setSubmitting(true);
     try {
-      const created = await createRequest({ teamId, requestType });
-      setSubmitted(created);
+      const created = await createRequest({
+        hall: hall as Hall,
+        teamNumber: parsedTeamNumber,
+        gender,
+        requestType,
+      });
+      toast.success(
+        `Request submitted — ${formatTeam(created.hall, created.teamNumber)}. A volunteer will come find you shortly.`,
+      );
+      setHall('');
+      setTeamNumber('');
+      setGender(null);
+      setRequestType(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not submit your request');
     } finally {
       setSubmitting(false);
     }
   };
-
-  const reset = () => {
-    setSubmitted(null);
-    setHall('');
-    setTeamId('');
-    setRequestType(null);
-  };
-
-  if (submitted) {
-    return (
-      <div className="mx-auto max-w-md">
-        <Card className="text-center">
-          <p className="text-4xl">✅</p>
-          <h1 className="mt-3 text-xl font-bold text-slate-900">Request submitted</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {formatTeam(submitted.team.hall, submitted.team.teamNumber)} ·{' '}
-            {formatRequestType(submitted.requestType)}
-          </p>
-          <p className="mt-4 text-sm text-slate-500">
-            A volunteer will come find you shortly. No need to wait here — this page won't track
-            it live, so there's nothing more to do.
-          </p>
-          <Button className="mt-6 w-full" onClick={reset}>
-            Submit another request
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-md">
@@ -97,38 +71,50 @@ export function HomePage() {
       </div>
 
       <Card className="space-y-5">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Hall</label>
-          {teamsLoading ? (
-            <Spinner />
-          ) : (
-            <Select
-              value={hall}
-              onChange={(e) => {
-                setHall(e.target.value);
-                setTeamId('');
-              }}
-            >
-              <option value="">Select your hall…</option>
-              {halls.map((h) => (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Hall</label>
+            <Select value={hall} onChange={(e) => setHall(e.target.value)}>
+              <option value="">Select…</option>
+              {HALL_OPTIONS.map((h) => (
                 <option key={h} value={h}>
                   {formatHall(h)}
                 </option>
               ))}
             </Select>
-          )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Team number</label>
+            <Input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              placeholder="e.g. 12"
+              value={teamNumber}
+              onChange={(e) => setTeamNumber(e.target.value)}
+            />
+          </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Team number</label>
-          <Select value={teamId} onChange={(e) => setTeamId(e.target.value)} disabled={!hall}>
-            <option value="">Select your team…</option>
-            {teamsInHall.map((t) => (
-              <option key={t.id} value={t.id}>
-                Team {t.teamNumber}
-              </option>
+          <label className="mb-2 block text-sm font-medium text-slate-700">Gender</label>
+          <div className="grid grid-cols-2 gap-2">
+            {GENDER_OPTIONS.map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGender(g)}
+                className={`rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${
+                  gender === g
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                }`}
+              >
+                {formatGender(g)}
+              </button>
             ))}
-          </Select>
+          </div>
         </div>
 
         <div>

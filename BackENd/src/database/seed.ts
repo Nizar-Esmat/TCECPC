@@ -1,9 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
-import { Hall } from '../common/enums/hall.enum';
 import { UserRole } from '../common/enums/user-role.enum';
-import { TeamsService } from '../modules/teams/teams.service';
 import { UsersService } from '../modules/users/users.service';
 
 const VOLUNTEER_NAMES = [
@@ -17,8 +15,6 @@ const VOLUNTEER_NAMES = [
   'Hassan Volunteer',
 ];
 const VOLUNTEER_CAPACITIES = [1, 1, 2, 2, 2, 3, 3, 1];
-const TEAM_NUMBERS_PER_HALL = [1, 2, 3];
-const HALLS = [Hall.HALL_1, Hall.HALL_2, Hall.HALL_3, Hall.HALL_4];
 
 async function seed(): Promise<void> {
   const app = await NestFactory.createApplicationContext(AppModule, {
@@ -28,11 +24,10 @@ async function seed(): Promise<void> {
   try {
     const dataSource = app.get(DataSource);
     await dataSource.query(
-      'TRUNCATE TABLE notifications, request_history, requests, users, teams RESTART IDENTITY CASCADE',
+      'TRUNCATE TABLE notifications, request_history, requests, users RESTART IDENTITY CASCADE',
     );
 
     const usersService = app.get(UsersService);
-    const teamsService = app.get(TeamsService);
 
     const codes: { role: string; name: string; code: string }[] = [];
 
@@ -55,12 +50,6 @@ async function seed(): Promise<void> {
         name: volunteer.name,
         code: volunteer.code,
       });
-    }
-
-    for (const hall of HALLS) {
-      for (const teamNumber of TEAM_NUMBERS_PER_HALL) {
-        await teamsService.create({ hall, teamNumber });
-      }
     }
 
     console.log(

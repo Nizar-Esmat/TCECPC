@@ -16,6 +16,7 @@ export function LeaderUsersPage() {
   const fetch = useUsersStore((s) => s.fetch);
   const updateStatus = useUsersStore((s) => s.updateStatus);
   const updateCapacity = useUsersStore((s) => s.updateCapacity);
+  const removeUser = useUsersStore((s) => s.remove);
   const lastCreatedCode = useUsersStore((s) => s.lastCreatedCode);
   const clearLastCreatedCode = useUsersStore((s) => s.clearLastCreatedCode);
 
@@ -50,6 +51,18 @@ export function LeaderUsersPage() {
     }
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Delete ${name}? They will no longer be able to log in.`)) {
+      return;
+    }
+    try {
+      await removeUser(id);
+      toast.success(`${name} deleted`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not delete user');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -76,6 +89,10 @@ export function LeaderUsersPage() {
           users={filtered}
           onStatusChange={(id, status) => void handleStatusChange(id, status)}
           onCapacityChange={(id, capacity) => void handleCapacityChange(id, capacity)}
+          onDelete={(id) => {
+            const user = filtered.find((u) => u.id === id);
+            void handleDelete(id, user?.name ?? 'this user');
+          }}
         />
       )}
 

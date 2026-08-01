@@ -22,3 +22,7 @@ export async function updateUserStatus(id: string, status: VolunteerStatus): Pro
 export async function updateUserCapacity(id: string, capacity: number): Promise<UserDto> {
   return (await client.patch<UserDto>(`/users/${id}/capacity`, { capacity })).data;
 }
+
+export async function deleteUser(id: string): Promise<void> {
+  await client.delete(`/users/${id}`);
+}

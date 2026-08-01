@@ -10,14 +10,13 @@ import { RequestStatus } from '../../common/enums/request-status.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { AssignmentService } from '../assignment/assignment.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { Team } from '../teams/entities/team.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestResponseDto } from './dto/request-response.dto';
 import { RequestHistory } from './entities/request-history.entity';
 import { Request } from './entities/request.entity';
 
-const RELATIONS = { team: true, volunteer: true } as const;
+const RELATIONS = { volunteer: true } as const;
 const ACTIVE_STATUSES = [RequestStatus.ASSIGNED, RequestStatus.PICKED_UP];
 
 @Injectable()
@@ -35,15 +34,10 @@ export class RequestsService {
   ): Promise<RequestResponseDto> {
     const requestId = await this.requestsRepository.manager.transaction(
       async (manager) => {
-        const team = await manager.findOne(Team, {
-          where: { id: dto.teamId },
-        });
-        if (!team) {
-          throw new NotFoundException(`Team with id ${dto.teamId} not found`);
-        }
-
         const created = manager.create(Request, {
-          teamId: dto.teamId,
+          hall: dto.hall,
+          teamNumber: dto.teamNumber,
+          gender: dto.gender,
           requestType: dto.requestType,
           priority: dto.priority ?? 0,
           status: RequestStatus.WAITING,

@@ -23,9 +23,9 @@ async function bootstrap() {
   app.enableCors({ origin: process.env.CORS_ORIGIN ?? '*', credentials: true });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('TCECPC Volunteer Dispatch API')
+    .setTitle('Movement Controller ECPC API')
     .setDescription(
-      'Real-time volunteer dispatch system for the TCECPC programming competition: escort requests, assignment, and live dashboard monitoring.',
+      'Real-time volunteer dispatch system for the Egyptian Collegiate Programming Contest (ECPC): escort requests, assignment, and live dashboard monitoring.',
     )
     .setVersion('1.0')
     .addBearerAuth(

@@ -14,7 +14,7 @@ import { User } from '../users/entities/user.entity';
 import { AssignmentAttemptDto } from './dto/assignment-attempt.dto';
 
 const ACTIVE_STATUSES = [RequestStatus.ASSIGNED, RequestStatus.PICKED_UP];
-const RELATIONS = { team: true, volunteer: true } as const;
+const RELATIONS = { volunteer: true } as const;
 
 interface ScoredCandidate {
   user: User;
@@ -49,7 +49,6 @@ export class AssignmentService {
       async (manager) => {
         const request = await manager.findOne(Request, {
           where: { id: requestId },
-          relations: { team: true },
         });
         if (!request || request.status !== RequestStatus.WAITING) {
           return { requestId, assigned: false };
@@ -196,7 +195,6 @@ export class AssignmentService {
     const candidateIds = candidates.map((c) => c.id);
     const activeRequests = await manager.find(Request, {
       where: { volunteerId: In(candidateIds), status: In(ACTIVE_STATUSES) },
-      relations: { team: true },
     });
 
     const activeByVolunteer = new Map<string, Request[]>();
@@ -214,13 +212,11 @@ export class AssignmentService {
         continue;
       }
 
-      const sameHall = active.filter((r) => r.team.hall === request.team.hall);
+      const sameHall = active.filter((r) => r.hall === request.hall);
       const hallMatch = sameHall.length > 0;
       const distance = hallMatch
         ? Math.min(
-            ...sameHall.map((r) =>
-              Math.abs(r.team.teamNumber - request.team.teamNumber),
-            ),
+            ...sameHall.map((r) => Math.abs(r.teamNumber - request.teamNumber)),
           )
         : Number.POSITIVE_INFINITY;
 

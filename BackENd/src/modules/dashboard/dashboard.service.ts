@@ -5,7 +5,6 @@ import { Hall } from '../../common/enums/hall.enum';
 import { RequestStatus } from '../../common/enums/request-status.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { VolunteerStatus } from '../../common/enums/volunteer-status.enum';
-import { Team } from '../teams/entities/team.entity';
 import { Request } from '../requests/entities/request.entity';
 import { User } from '../users/entities/user.entity';
 import {
@@ -25,13 +24,10 @@ export class DashboardService {
   ) {}
 
   async getOverview(): Promise<DashboardOverviewDto> {
-    const requests = await this.requestsRepository.find({
-      relations: { team: true },
-    });
+    const requests = await this.requestsRepository.find();
     const volunteers = await this.requestsRepository.manager.find(User, {
       where: { role: UserRole.VOLUNTEER },
     });
-    const teamCount = await this.requestsRepository.manager.count(Team);
 
     const requestCounts: RequestCountsDto = {
       waiting: 0,
@@ -69,7 +65,7 @@ export class DashboardService {
           break;
       }
 
-      const hallStats = perHallStats.get(request.team.hall);
+      const hallStats = perHallStats.get(request.hall);
       if (hallStats) {
         if (request.status === RequestStatus.WAITING) {
           hallStats.waitingCount++;
@@ -110,7 +106,6 @@ export class DashboardService {
     return {
       requests: requestCounts,
       volunteers: volunteerCounts,
-      teamCount,
       perHall,
     };
   }

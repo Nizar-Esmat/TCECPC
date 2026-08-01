@@ -1,17 +1,21 @@
 import { Column, Entity, ManyToOne } from 'typeorm';
 import { AbstractEntity } from '../../../common/abstract/abstract.entity';
+import { Gender } from '../../../common/enums/gender.enum';
+import { Hall } from '../../../common/enums/hall.enum';
 import { RequestStatus } from '../../../common/enums/request-status.enum';
 import { RequestType } from '../../../common/enums/request-type.enum';
-import { Team } from '../../teams/entities/team.entity';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('requests')
 export class Request extends AbstractEntity {
-  @ManyToOne(() => Team, { nullable: false })
-  team: Team;
+  @Column({ type: 'enum', enum: Hall })
+  hall: Hall;
 
-  @Column({ type: 'uuid' })
-  teamId: string;
+  @Column()
+  teamNumber: number;
+
+  @Column({ type: 'enum', enum: Gender })
+  gender: Gender;
 
   @ManyToOne(() => User, { nullable: true })
   volunteer: User | null;

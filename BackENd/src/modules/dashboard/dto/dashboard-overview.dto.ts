@@ -26,6 +26,5 @@ export class HallBreakdownDto {
 export class DashboardOverviewDto {
   @ApiProperty({ type: RequestCountsDto }) requests: RequestCountsDto;
   @ApiProperty({ type: VolunteerCountsDto }) volunteers: VolunteerCountsDto;
-  @ApiProperty() teamCount: number;
   @ApiProperty({ type: [HallBreakdownDto] }) perHall: HallBreakdownDto[];
 }

@@ -125,8 +125,8 @@ export class UsersService {
   }
 
   async remove(id: string): Promise<null> {
-    const user = await this.findEntityOrThrow(id);
-    await this.usersRepository.remove(user);
+    await this.findEntityOrThrow(id);
+    await this.usersRepository.softDelete(id);
     return null;
   }
 

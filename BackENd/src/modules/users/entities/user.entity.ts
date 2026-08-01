@@ -1,4 +1,4 @@
-import { Column, Entity } from 'typeorm';
+import { Column, DeleteDateColumn, Entity } from 'typeorm';
 import { AbstractEntity } from '../../../common/abstract/abstract.entity';
 import { UserRole } from '../../../common/enums/user-role.enum';
 import { VolunteerStatus } from '../../../common/enums/volunteer-status.enum';
@@ -26,4 +26,7 @@ export class User extends AbstractEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   availableSince: Date | null;
+
+  @DeleteDateColumn({ type: 'timestamptz' })
+  deletedAt: Date | null;
 }
