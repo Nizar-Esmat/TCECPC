@@ -6,6 +6,7 @@ import { RequestStatus } from '../../common/enums/request-status.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { VolunteerStatus } from '../../common/enums/volunteer-status.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { NotificationsService } from '../notifications/notifications.service';
 import { RequestResponseDto } from '../requests/dto/request-response.dto';
 import { RequestHistory } from '../requests/entities/request-history.entity';
 import { Request } from '../requests/entities/request.entity';
@@ -27,6 +28,7 @@ export class AssignmentService {
   constructor(
     @InjectRepository(Request)
     private readonly requestsRepository: Repository<Request>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async runAssignment(): Promise<AssignmentAttemptDto[]> {
@@ -43,35 +45,44 @@ export class AssignmentService {
   }
 
   async tryAssign(requestId: string): Promise<AssignmentAttemptDto> {
-    return this.requestsRepository.manager.transaction(async (manager) => {
-      const request = await manager.findOne(Request, {
-        where: { id: requestId },
-        relations: { team: true },
-      });
-      if (!request || request.status !== RequestStatus.WAITING) {
-        return { requestId, assigned: false };
-      }
+    const result = await this.requestsRepository.manager.transaction(
+      async (manager) => {
+        const request = await manager.findOne(Request, {
+          where: { id: requestId },
+          relations: { team: true },
+        });
+        if (!request || request.status !== RequestStatus.WAITING) {
+          return { requestId, assigned: false };
+        }
 
-      const candidate = await this.findBestCandidate(manager, request);
-      if (!candidate) {
-        return { requestId, assigned: false };
-      }
+        const candidate = await this.findBestCandidate(manager, request);
+        if (!candidate) {
+          return { requestId, assigned: false };
+        }
 
-      const claimed = await this.claimForVolunteer(
-        manager,
-        requestId,
-        candidate.id,
-      );
-      return claimed
-        ? { requestId, assigned: true, volunteerId: candidate.id }
-        : { requestId, assigned: false };
-    });
+        const claimed = await this.claimForVolunteer(
+          manager,
+          requestId,
+          candidate.id,
+        );
+        return claimed
+          ? { requestId, assigned: true, volunteerId: candidate.id }
+          : { requestId, assigned: false };
+      },
+    );
+
+    if (result.assigned) {
+      const dto = await this.toResponseDto(requestId);
+      await this.notificationsService.notifyRequestAssigned(dto);
+    }
+    return result;
   }
 
   async reassign(
     requestId: string,
     leader: AuthenticatedUser,
   ): Promise<RequestResponseDto> {
+    let oldVolunteerId = '';
     await this.requestsRepository.manager.transaction(async (manager) => {
       const request = await manager.findOne(Request, {
         where: { id: requestId },
@@ -85,7 +96,7 @@ export class AssignmentService {
         );
       }
 
-      const oldVolunteerId = request.volunteerId as string;
+      oldVolunteerId = request.volunteerId as string;
       await manager.update(Request, requestId, {
         volunteerId: null,
         status: RequestStatus.WAITING,
@@ -98,6 +109,12 @@ export class AssignmentService {
       });
       await this.syncVolunteerStatus(manager, oldVolunteerId);
     });
+
+    const unassignedDto = await this.toResponseDto(requestId);
+    await this.notificationsService.notifyRequestUnassigned(
+      unassignedDto,
+      oldVolunteerId,
+    );
 
     await this.tryAssign(requestId);
     return this.toResponseDto(requestId);
@@ -121,6 +138,11 @@ export class AssignmentService {
           status: RequestStatus.WAITING,
         });
       });
+      const unassignedDto = await this.toResponseDto(request.id);
+      await this.notificationsService.notifyRequestUnassigned(
+        unassignedDto,
+        volunteerId,
+      );
       await this.tryAssign(request.id);
     }
   }

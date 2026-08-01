@@ -12,6 +12,9 @@ import { UsersModule } from './modules/users/users.module';
 import { TeamsModule } from './modules/teams/teams.module';
 import { RequestsModule } from './modules/requests/requests.module';
 import { AssignmentModule } from './modules/assignment/assignment.module';
+import { EventsModule } from './modules/events/events.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { AssignmentModule } from './modules/assignment/assignment.module';
     TeamsModule,
     RequestsModule,
     AssignmentModule,
+    EventsModule,
+    NotificationsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

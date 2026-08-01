@@ -11,6 +11,7 @@ import { UserRole } from '../../common/enums/user-role.enum';
 import { VolunteerStatus } from '../../common/enums/volunteer-status.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { AssignmentService } from '../assignment/assignment.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { UpdateCapacityDto } from './dto/update-capacity.dto';
@@ -29,6 +30,7 @@ export class UsersService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly assignmentService: AssignmentService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(dto: CreateUserDto): Promise<UserResponseDto> {
@@ -104,7 +106,9 @@ export class UsersService {
       await this.assignmentService.resyncAndSweep(id);
     }
 
-    return new UserResponseDto(saved);
+    const result = new UserResponseDto(saved);
+    this.notificationsService.notifyVolunteerStatusChanged(result);
+    return result;
   }
 
   async updateCapacity(
@@ -115,7 +119,9 @@ export class UsersService {
     user.capacity = dto.capacity;
     const saved = await this.usersRepository.save(user);
     await this.assignmentService.resyncAndSweep(id);
-    return new UserResponseDto(saved);
+    const result = new UserResponseDto(saved);
+    this.notificationsService.notifyVolunteerStatusChanged(result);
+    return result;
   }
 
   async remove(id: string): Promise<null> {

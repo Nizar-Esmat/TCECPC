@@ -9,6 +9,7 @@ import { EntityManager, In, Repository } from 'typeorm';
 import { RequestStatus } from '../../common/enums/request-status.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { AssignmentService } from '../assignment/assignment.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Team } from '../teams/entities/team.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateRequestDto } from './dto/create-request.dto';
@@ -25,6 +26,7 @@ export class RequestsService {
     @InjectRepository(Request)
     private readonly requestsRepository: Repository<Request>,
     private readonly assignmentService: AssignmentService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(
@@ -60,7 +62,9 @@ export class RequestsService {
     // Attempt immediate auto-assignment (Phase 6); falls back to WAITING if
     // no eligible volunteer is free right now.
     await this.assignmentService.tryAssign(requestId);
-    return this.findOne(requestId);
+    const created = await this.findOne(requestId);
+    await this.notificationsService.notifyRequestCreated(created);
+    return created;
   }
 
   findAll(): Promise<RequestResponseDto[]> {
@@ -96,70 +100,75 @@ export class RequestsService {
     id: string,
     volunteer: AuthenticatedUser,
   ): Promise<RequestResponseDto> {
-    return this.requestsRepository.manager.transaction(async (manager) => {
-      // Lock the claiming volunteer's own row: serializes concurrent
-      // self-claims BY THE SAME VOLUNTEER (e.g. a double-tap on flaky wifi
-      // hitting two different WAITING requests at once) so the capacity
-      // count below can't be read-then-both-pass under two overlapping
-      // transactions.
-      const user = await manager
-        .createQueryBuilder(User, 'user')
-        .setLock('pessimistic_write')
-        .where('user.id = :id', { id: volunteer.id })
-        .getOne();
-      if (!user) {
-        throw new NotFoundException('Authenticated user no longer exists');
-      }
+    const result = await this.requestsRepository.manager.transaction(
+      async (manager) => {
+        // Lock the claiming volunteer's own row: serializes concurrent
+        // self-claims BY THE SAME VOLUNTEER (e.g. a double-tap on flaky wifi
+        // hitting two different WAITING requests at once) so the capacity
+        // count below can't be read-then-both-pass under two overlapping
+        // transactions.
+        const user = await manager
+          .createQueryBuilder(User, 'user')
+          .setLock('pessimistic_write')
+          .where('user.id = :id', { id: volunteer.id })
+          .getOne();
+        if (!user) {
+          throw new NotFoundException('Authenticated user no longer exists');
+        }
 
-      const activeCount = await manager.count(Request, {
-        where: { volunteerId: user.id, status: In(ACTIVE_STATUSES) },
-      });
-      if (activeCount >= user.capacity) {
-        throw new ConflictException(
-          'You have reached your maximum concurrent request capacity',
-        );
-      }
+        const activeCount = await manager.count(Request, {
+          where: { volunteerId: user.id, status: In(ACTIVE_STATUSES) },
+        });
+        if (activeCount >= user.capacity) {
+          throw new ConflictException(
+            'You have reached your maximum concurrent request capacity',
+          );
+        }
 
-      // Atomic compare-and-swap guards against a DIFFERENT volunteer
-      // claiming this SAME request at the same instant — Postgres
-      // serializes concurrent UPDATEs to one row, so the losing writer's
-      // WHERE predicate simply matches 0 rows once the winner commits.
-      const result = await manager
-        .createQueryBuilder()
-        .update(Request)
-        .set({
-          volunteerId: user.id,
-          status: RequestStatus.ASSIGNED,
-          assignedAt: new Date(),
-        })
-        .where('id = :id AND status = :status', {
-          id,
-          status: RequestStatus.WAITING,
-        })
-        .execute();
+        // Atomic compare-and-swap guards against a DIFFERENT volunteer
+        // claiming this SAME request at the same instant — Postgres
+        // serializes concurrent UPDATEs to one row, so the losing writer's
+        // WHERE predicate simply matches 0 rows once the winner commits.
+        const result = await manager
+          .createQueryBuilder()
+          .update(Request)
+          .set({
+            volunteerId: user.id,
+            status: RequestStatus.ASSIGNED,
+            assignedAt: new Date(),
+          })
+          .where('id = :id AND status = :status', {
+            id,
+            status: RequestStatus.WAITING,
+          })
+          .execute();
 
-      if (result.affected !== 1) {
-        throw new ConflictException(
-          'Request has already been claimed or is no longer waiting',
-        );
-      }
+        if (result.affected !== 1) {
+          throw new ConflictException(
+            'Request has already been claimed or is no longer waiting',
+          );
+        }
 
-      await this.recordHistory(manager, id, user.id, RequestStatus.ASSIGNED);
-      await this.assignmentService.syncVolunteerStatus(manager, user.id);
+        await this.recordHistory(manager, id, user.id, RequestStatus.ASSIGNED);
+        await this.assignmentService.syncVolunteerStatus(manager, user.id);
 
-      const full = await manager.findOneOrFail(Request, {
-        where: { id },
-        relations: RELATIONS,
-      });
-      return new RequestResponseDto(full);
-    });
+        const full = await manager.findOneOrFail(Request, {
+          where: { id },
+          relations: RELATIONS,
+        });
+        return new RequestResponseDto(full);
+      },
+    );
+
+    await this.notificationsService.notifyRequestAssigned(result);
+    return result;
   }
 
-  pickup(
+  async pickup(
     id: string,
     volunteer: AuthenticatedUser,
   ): Promise<RequestResponseDto> {
-    return this.transition(
+    const result = await this.transition(
       id,
       volunteer.id,
       RequestStatus.ASSIGNED,
@@ -168,6 +177,8 @@ export class RequestsService {
         request.pickedUpAt = now;
       },
     );
+    this.notificationsService.notifyRequestUpdated(result);
+    return result;
   }
 
   async complete(
@@ -188,7 +199,9 @@ export class RequestsService {
     // afterward so the returned volunteer snapshot reflects the sync, not
     // the pre-sync state captured inside transition()'s own transaction.
     await this.assignmentService.resyncAndSweep(volunteer.id);
-    return this.findOne(id);
+    const dto = await this.findOne(id);
+    await this.notificationsService.notifyRequestCompleted(dto);
+    return dto;
   }
 
   async cancel(
@@ -230,7 +243,9 @@ export class RequestsService {
       // sync (mirrors the same fix applied to complete()).
       await this.assignmentService.resyncAndSweep(freedVolunteerId);
     }
-    return this.findOne(id);
+    const dto = await this.findOne(id);
+    await this.notificationsService.notifyRequestCancelled(dto);
+    return dto;
   }
 
   private async transition(
