@@ -11,6 +11,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { RequestResponseDto } from '../requests/dto/request-response.dto';
 import { RequestHistory } from '../requests/entities/request-history.entity';
 import { Request } from '../requests/entities/request.entity';
+import { UserResponseDto } from '../users/dto/user-response.dto';
 import { User } from '../users/entities/user.entity';
 import { AssignmentAttemptDto } from './dto/assignment-attempt.dto';
 
@@ -171,14 +172,24 @@ export class AssignmentService {
       await manager.update(User, volunteerId, {
         status: VolunteerStatus.BUSY,
       });
+      user.status = VolunteerStatus.BUSY;
+      this.notificationsService.notifyVolunteerStatusChanged(
+        new UserResponseDto(user),
+      );
     } else if (
       activeCount < user.capacity &&
       user.status === VolunteerStatus.BUSY
     ) {
+      const availableSince = new Date();
       await manager.update(User, volunteerId, {
         status: VolunteerStatus.AVAILABLE,
-        availableSince: new Date(),
+        availableSince,
       });
+      user.status = VolunteerStatus.AVAILABLE;
+      user.availableSince = availableSince;
+      this.notificationsService.notifyVolunteerStatusChanged(
+        new UserResponseDto(user),
+      );
     }
   }
 

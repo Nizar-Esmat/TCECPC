@@ -103,7 +103,11 @@ export class UsersService {
       await this.assignmentService.resyncAndSweep(id);
     }
 
-    const result = new UserResponseDto(saved);
+    // Re-fetch: resyncAndSweep/reassignAllForVolunteer may have flipped the
+    // status again (e.g. still-active requests immediately marking them
+    // BUSY) — using the stale `saved` snapshot here would emit/return a
+    // status that's already wrong.
+    const result = new UserResponseDto(await this.findEntityOrThrow(id));
     this.notificationsService.notifyVolunteerStatusChanged(result);
     return result;
   }
@@ -114,9 +118,10 @@ export class UsersService {
   ): Promise<UserResponseDto> {
     const user = await this.findEntityOrThrow(id);
     user.capacity = dto.capacity;
-    const saved = await this.usersRepository.save(user);
+    await this.usersRepository.save(user);
     await this.assignmentService.resyncAndSweep(id);
-    const result = new UserResponseDto(saved);
+
+    const result = new UserResponseDto(await this.findEntityOrThrow(id));
     this.notificationsService.notifyVolunteerStatusChanged(result);
     return result;
   }
