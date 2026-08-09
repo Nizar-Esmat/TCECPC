@@ -2,35 +2,34 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Select } from '../components/ui/Select';
 import { Input } from '../components/ui/Input';
 import { useRequestsStore } from '../stores/requests.store';
-import { Gender, Hall, RequestType } from '../types/enums';
-import { formatGender, formatHall, formatTeam } from '../utils/formatters';
+import { Gender, RequestType } from '../types/enums';
+import { formatGender, formatHall, formatTeam, getHallFromTeamNumber } from '../utils/formatters';
 
 const REQUEST_TYPE_OPTIONS: { type: RequestType; label: string; icon: string }[] = [
   { type: RequestType.BATHROOM, label: 'Bathroom', icon: '🚻' },
   { type: RequestType.PRAYER, label: 'Prayer', icon: '🕌' },
-  { type: RequestType.SMOKING, label: 'Smoking', icon: '🚬' },
-  { type: RequestType.OTHER, label: 'Other', icon: '✋' },
+  { type: RequestType.BREAK_TIME, label: 'Break time', icon: '⏸️' },
 ];
 
 const GENDER_OPTIONS = Object.values(Gender);
 
-const HALL_OPTIONS = Object.values(Hall);
-
 export function HomePage() {
   const createRequest = useRequestsStore((s) => s.create);
 
-  const [hall, setHall] = useState('');
   const [teamNumber, setTeamNumber] = useState('');
   const [gender, setGender] = useState<Gender | null>(null);
   const [requestType, setRequestType] = useState<RequestType | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const parsedTeamNumber = Number(teamNumber);
+  const derivedHall =
+    Number.isInteger(parsedTeamNumber) && parsedTeamNumber > 0
+      ? getHallFromTeamNumber(parsedTeamNumber)
+      : null;
   const canSubmit =
-    Boolean(hall) &&
+    Boolean(derivedHall) &&
     Boolean(gender) &&
     Boolean(requestType) &&
     Number.isInteger(parsedTeamNumber) &&
@@ -38,11 +37,11 @@ export function HomePage() {
     !submitting;
 
   const handleSubmit = async () => {
-    if (!hall || !gender || !requestType || !canSubmit) return;
+    if (!derivedHall || !gender || !requestType || !canSubmit) return;
     setSubmitting(true);
     try {
       const created = await createRequest({
-        hall: hall as Hall,
+        hall: derivedHall,
         teamNumber: parsedTeamNumber,
         gender,
         requestType,
@@ -50,7 +49,6 @@ export function HomePage() {
       toast.success(
         `Request submitted — ${formatTeam(created.hall, created.teamNumber)}. A volunteer will come find you shortly.`,
       );
-      setHall('');
       setTeamNumber('');
       setGender(null);
       setRequestType(null);
@@ -71,30 +69,21 @@ export function HomePage() {
       </div>
 
       <Card className="space-y-5">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Hall</label>
-            <Select value={hall} onChange={(e) => setHall(e.target.value)}>
-              <option value="">Select…</option>
-              {HALL_OPTIONS.map((h) => (
-                <option key={h} value={h}>
-                  {formatHall(h)}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Team number</label>
-            <Input
-              type="number"
-              min={1}
-              inputMode="numeric"
-              placeholder="e.g. 12"
-              value={teamNumber}
-              onChange={(e) => setTeamNumber(e.target.value)}
-            />
-          </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Team number</label>
+          <Input
+            type="number"
+            min={1}
+            inputMode="numeric"
+            placeholder="e.g. 2015"
+            value={teamNumber}
+            onChange={(e) => setTeamNumber(e.target.value)}
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            {derivedHall
+              ? `→ ${formatHall(derivedHall)}`
+              : 'Team number should start with your hall number (1-4), e.g. 2015 for Hall 2.'}
+          </p>
         </div>
 
         <div>

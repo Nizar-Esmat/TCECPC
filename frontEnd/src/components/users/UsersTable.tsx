@@ -30,6 +30,7 @@ export function UsersTable({
             <th className="px-4 py-3">Code</th>
             <th className="px-4 py-3">Name</th>
             <th className="px-4 py-3">Role</th>
+            <th className="px-4 py-3">Hall</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3">Capacity</th>
             <th className="px-4 py-3">Created</th>
@@ -44,6 +45,7 @@ export function UsersTable({
               <td className="px-4 py-3">
                 <Badge color={u.role === UserRole.LEADER ? 'indigo' : 'blue'}>{u.role}</Badge>
               </td>
+              <td className="px-4 py-3 text-slate-600">{u.hall ?? '—'}</td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
                   <VolunteerStatusBadge status={u.status} />

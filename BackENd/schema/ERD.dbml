@@ -19,8 +19,7 @@ Enum Hall {
 Enum RequestType {
   BATHROOM
   PRAYER
-  SMOKING
-  OTHER
+  BREAK_TIME
 }
 
 Enum RequestStatus {
@@ -39,6 +38,7 @@ Table users {
 
   role UserRole
   status VolunteerStatus
+  hall int [null]
 
   created_at timestamp
   updated_at timestamp

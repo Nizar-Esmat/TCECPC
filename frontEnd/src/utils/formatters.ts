@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
-import type { Gender, Hall, RequestType } from '../types/enums';
+import { Hall } from '../types/enums';
+import type { Gender, RequestType } from '../types/enums';
 
 export function timeAgo(iso: string): string {
   return formatDistanceToNow(new Date(iso), { addSuffix: true });
@@ -10,7 +11,10 @@ export function formatHall(hall: Hall): string {
 }
 
 export function formatRequestType(type: RequestType): string {
-  return type.charAt(0) + type.slice(1).toLowerCase();
+  return type
+    .split('_')
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
 export function formatGender(gender: Gender): string {
@@ -19,4 +23,16 @@ export function formatGender(gender: Gender): string {
 
 export function formatTeam(hall: Hall, teamNumber: number): string {
   return `${formatHall(hall)} · Team ${teamNumber}`;
+}
+
+const TEAM_NUMBER_TO_HALL: Record<string, Hall> = {
+  '1': Hall.HALL_1,
+  '2': Hall.HALL_2,
+  '3': Hall.HALL_3,
+  '4': Hall.HALL_4,
+};
+
+export function getHallFromTeamNumber(teamNumber: number): Hall | null {
+  const firstDigit = String(teamNumber)[0];
+  return TEAM_NUMBER_TO_HALL[firstDigit] ?? null;
 }

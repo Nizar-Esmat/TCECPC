@@ -35,7 +35,10 @@ client.interceptors.response.use(
     // Every backend response is wrapped as { success, statusCode, message,
     // data, timestamp, path }. Unwrap once here so every call site just
     // reads `.data` as the real payload type via the generic on client.get<T>.
-    response.data = response.data?.data;
+    // Binary/blob responses (e.g. PDF export) aren't wrapped, so leave them as-is.
+    if (response.config.responseType !== 'blob') {
+      response.data = response.data?.data;
+    }
     return response;
   },
   (error: unknown) => {

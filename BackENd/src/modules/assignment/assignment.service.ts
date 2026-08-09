@@ -6,6 +6,7 @@ import { RequestStatus } from '../../common/enums/request-status.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { VolunteerStatus } from '../../common/enums/volunteer-status.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { hallToNumber } from '../../common/utils/hall.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { RequestResponseDto } from '../requests/dto/request-response.dto';
 import { RequestHistory } from '../requests/entities/request-history.entity';
@@ -186,7 +187,11 @@ export class AssignmentService {
     request: Request,
   ): Promise<User | null> {
     const candidates = await manager.find(User, {
-      where: { role: UserRole.VOLUNTEER, status: VolunteerStatus.AVAILABLE },
+      where: {
+        role: UserRole.VOLUNTEER,
+        status: VolunteerStatus.AVAILABLE,
+        hall: hallToNumber[request.hall],
+      },
     });
     if (candidates.length === 0) {
       return null;

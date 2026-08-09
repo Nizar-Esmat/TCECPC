@@ -5,6 +5,13 @@ import type { UserRole, VolunteerStatus } from '../types/enums';
 export interface CreateUserPayload {
   name: string;
   role: UserRole;
+  hall: number;
+}
+
+export interface BulkCreateUsersPayload {
+  role: UserRole;
+  hall: number;
+  users: { name: string }[];
 }
 
 export async function listUsers(): Promise<UserDto[]> {
@@ -13,6 +20,19 @@ export async function listUsers(): Promise<UserDto[]> {
 
 export async function createUser(payload: CreateUserPayload): Promise<UserDto> {
   return (await client.post<UserDto>('/users', payload)).data;
+}
+
+export async function bulkCreateUsers(payload: BulkCreateUsersPayload): Promise<UserDto[]> {
+  return (await client.post<UserDto[]>('/users/bulk', payload)).data;
+}
+
+export async function exportHallPdf(hall: number): Promise<Blob> {
+  return (
+    await client.get<Blob>(`/users/export/pdf`, {
+      params: { hall },
+      responseType: 'blob',
+    })
+  ).data;
 }
 
 export async function updateUserStatus(id: string, status: VolunteerStatus): Promise<UserDto> {

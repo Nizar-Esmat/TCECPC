@@ -34,6 +34,7 @@ async function seed(): Promise<void> {
     const leader = await usersService.create({
       name: 'Competition Leader',
       role: UserRole.LEADER,
+      hall: 1,
     });
     codes.push({ role: 'LEADER', name: leader.name, code: leader.code });
 
@@ -41,6 +42,7 @@ async function seed(): Promise<void> {
       const volunteer = await usersService.create({
         name: VOLUNTEER_NAMES[i],
         role: UserRole.VOLUNTEER,
+        hall: (i % 4) + 1,
       });
       await usersService.updateCapacity(volunteer.id, {
         capacity: VOLUNTEER_CAPACITIES[i],

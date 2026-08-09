@@ -24,6 +24,9 @@ export class User extends AbstractEntity {
   @Column({ default: 1 })
   capacity: number;
 
+  @Column({ type: 'smallint', nullable: true })
+  hall: number | null;
+
   @Column({ type: 'timestamptz', nullable: true })
   availableSince: Date | null;
 

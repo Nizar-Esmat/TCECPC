@@ -23,6 +23,9 @@ export class UserResponseDto {
   capacity: number;
 
   @ApiProperty({ nullable: true })
+  hall: number | null;
+
+  @ApiProperty({ nullable: true })
   availableSince: Date | null;
 
   @ApiProperty()
@@ -38,6 +41,7 @@ export class UserResponseDto {
     this.role = user.role;
     this.status = user.status;
     this.capacity = user.capacity;
+    this.hall = user.hall;
     this.availableSince = user.availableSince;
     this.createdAt = user.createdAt;
     this.updatedAt = user.updatedAt;

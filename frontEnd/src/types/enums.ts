@@ -18,8 +18,7 @@ export type VolunteerStatus = (typeof VolunteerStatus)[keyof typeof VolunteerSta
 export const RequestType = {
   BATHROOM: 'BATHROOM',
   PRAYER: 'PRAYER',
-  SMOKING: 'SMOKING',
-  OTHER: 'OTHER',
+  BREAK_TIME: 'BREAK_TIME',
 } as const;
 export type RequestType = (typeof RequestType)[keyof typeof RequestType];
 

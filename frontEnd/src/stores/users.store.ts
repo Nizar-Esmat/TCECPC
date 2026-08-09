@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as usersApi from '../api/users.api';
-import type { CreateUserPayload } from '../api/users.api';
+import type { BulkCreateUsersPayload, CreateUserPayload } from '../api/users.api';
 import type { UserDto } from '../types/models';
 import type { VolunteerStatus } from '../types/enums';
 
@@ -8,21 +8,22 @@ interface UsersState {
   users: UserDto[];
   loading: boolean;
   error: string | null;
-  lastCreatedCode: string | null;
+  lastCreatedBatch: UserDto[] | null;
   fetch: () => Promise<void>;
   create: (payload: CreateUserPayload) => Promise<UserDto>;
+  createBulk: (payload: BulkCreateUsersPayload) => Promise<UserDto[]>;
   updateStatus: (id: string, status: VolunteerStatus) => Promise<void>;
   updateCapacity: (id: string, capacity: number) => Promise<void>;
   remove: (id: string) => Promise<void>;
   patchOne: (user: UserDto) => void;
-  clearLastCreatedCode: () => void;
+  clearLastCreatedBatch: () => void;
 }
 
 export const useUsersStore = create<UsersState>((set, get) => ({
   users: [],
   loading: false,
   error: null,
-  lastCreatedCode: null,
+  lastCreatedBatch: null,
 
   fetch: async () => {
     set({ loading: true, error: null });
@@ -39,7 +40,13 @@ export const useUsersStore = create<UsersState>((set, get) => ({
 
   create: async (payload) => {
     const created = await usersApi.createUser(payload);
-    set({ users: [...get().users, created], lastCreatedCode: created.code });
+    set({ users: [...get().users, created], lastCreatedBatch: [created] });
+    return created;
+  },
+
+  createBulk: async (payload) => {
+    const created = await usersApi.bulkCreateUsers(payload);
+    set({ users: [...get().users, ...created], lastCreatedBatch: created });
     return created;
   },
 
@@ -64,5 +71,5 @@ export const useUsersStore = create<UsersState>((set, get) => ({
     });
   },
 
-  clearLastCreatedCode: () => set({ lastCreatedCode: null }),
+  clearLastCreatedBatch: () => set({ lastCreatedBatch: null }),
 }));

@@ -15,6 +15,7 @@ export interface UserDto {
   role: UserRole;
   status: VolunteerStatus;
   capacity: number;
+  hall: number | null;
   availableSince: string | null;
   createdAt: string;
   updatedAt: string;

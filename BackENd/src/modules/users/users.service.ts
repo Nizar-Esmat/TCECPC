@@ -5,13 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { randomBytes } from 'crypto';
+import { randomInt } from 'crypto';
+import PDFDocument from 'pdfkit';
 import { QueryFailedError, Repository } from 'typeorm';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { VolunteerStatus } from '../../common/enums/volunteer-status.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { AssignmentService } from '../assignment/assignment.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { BulkCreateUsersDto } from './dto/bulk-create-users.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { UpdateCapacityDto } from './dto/update-capacity.dto';
@@ -20,8 +22,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { User } from './entities/user.entity';
 
-const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I
-const CODE_SUFFIX_LENGTH = 6;
+const CODE_LENGTH = 4;
 const CODE_GENERATION_MAX_ATTEMPTS = 5;
 
 @Injectable()
@@ -34,30 +35,25 @@ export class UsersService {
   ) {}
 
   async create(dto: CreateUserDto): Promise<UserResponseDto> {
-    const prefix = dto.role === UserRole.LEADER ? 'LDR' : 'VOL';
+    const saved = await this.saveWithUniqueCode({
+      name: dto.name,
+      role: dto.role,
+      hall: dto.hall,
+    });
+    return new UserResponseDto(saved);
+  }
 
-    for (let attempt = 1; attempt <= CODE_GENERATION_MAX_ATTEMPTS; attempt++) {
-      const code = `${prefix}-${this.randomSuffix()}`;
-      const user = this.usersRepository.create({
-        code,
-        name: dto.name,
+  async createBulk(dto: BulkCreateUsersDto): Promise<UserResponseDto[]> {
+    const results: UserResponseDto[] = [];
+    for (const item of dto.users) {
+      const saved = await this.saveWithUniqueCode({
+        name: item.name,
         role: dto.role,
+        hall: dto.hall,
       });
-
-      try {
-        const saved = await this.usersRepository.save(user);
-        return new UserResponseDto(saved);
-      } catch (error) {
-        if (this.isUniqueViolation(error)) {
-          continue;
-        }
-        throw error;
-      }
+      results.push(new UserResponseDto(saved));
     }
-
-    throw new InternalServerErrorException(
-      'Failed to generate a unique user code, please try again',
-    );
+    return results;
   }
 
   async findAll(query: FindUsersQueryDto): Promise<UserResponseDto[]> {
@@ -81,6 +77,7 @@ export class UsersService {
     const user = await this.findEntityOrThrow(id);
     if (dto.name !== undefined) user.name = dto.name;
     if (dto.role !== undefined) user.role = dto.role;
+    if (dto.hall !== undefined) user.hall = dto.hall;
     const saved = await this.usersRepository.save(user);
     return new UserResponseDto(saved);
   }
@@ -124,6 +121,35 @@ export class UsersService {
     return result;
   }
 
+  async exportHallPdf(hall: number): Promise<Buffer> {
+    const users = await this.usersRepository.find({
+      where: { hall },
+      order: { name: 'ASC' },
+    });
+
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    doc.fontSize(18).text(`Hall ${hall} — Volunteer Codes`, { align: 'center' });
+    doc.moveDown(1.5);
+
+    for (const user of users) {
+      doc.fontSize(12).text(`${user.name}  —  ${user.code}`);
+      doc.moveDown(0.5);
+    }
+    if (users.length === 0) {
+      doc.fontSize(12).text('No users in this hall yet.');
+    }
+
+    doc.end();
+
+    return new Promise((resolve, reject) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+    });
+  }
+
   async remove(id: string): Promise<null> {
     await this.findEntityOrThrow(id);
     await this.usersRepository.softDelete(id);
@@ -138,13 +164,37 @@ export class UsersService {
     return user;
   }
 
-  private randomSuffix(): string {
-    const bytes = randomBytes(CODE_SUFFIX_LENGTH);
-    let result = '';
-    for (let i = 0; i < CODE_SUFFIX_LENGTH; i++) {
-      result += CODE_CHARSET[bytes[i] % CODE_CHARSET.length];
+  private async saveWithUniqueCode(data: {
+    name: string;
+    role: UserRole;
+    hall: number;
+  }): Promise<User> {
+    for (let attempt = 1; attempt <= CODE_GENERATION_MAX_ATTEMPTS; attempt++) {
+      const user = this.usersRepository.create({
+        code: this.randomCode(),
+        name: data.name,
+        role: data.role,
+        hall: data.hall,
+      });
+
+      try {
+        return await this.usersRepository.save(user);
+      } catch (error) {
+        if (this.isUniqueViolation(error)) {
+          continue;
+        }
+        throw error;
+      }
     }
-    return result;
+
+    throw new InternalServerErrorException(
+      'Failed to generate a unique user code, please try again',
+    );
+  }
+
+  private randomCode(): string {
+    const max = 10 ** CODE_LENGTH;
+    return String(randomInt(0, max)).padStart(CODE_LENGTH, '0');
   }
 
   private isUniqueViolation(error: unknown): boolean {
