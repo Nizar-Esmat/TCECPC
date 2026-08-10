@@ -11,6 +11,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { Gender } from '../../../common/enums/gender.enum';
 import { UserRole } from '../../../common/enums/user-role.enum';
 
 export class BulkCreateUserItemDto {
@@ -18,6 +19,10 @@ export class BulkCreateUserItemDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @ApiProperty({ enum: Gender, example: Gender.MALE })
+  @IsEnum(Gender)
+  gender: Gender;
 }
 
 export class BulkCreateUsersDto {

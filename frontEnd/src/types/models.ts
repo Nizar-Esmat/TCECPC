@@ -13,6 +13,7 @@ export interface UserDto {
   code: string;
   name: string;
   role: UserRole;
+  gender: Gender;
   status: VolunteerStatus;
   capacity: number;
   hall: number | null;

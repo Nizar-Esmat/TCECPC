@@ -202,6 +202,7 @@ export class AssignmentService {
         role: UserRole.VOLUNTEER,
         status: VolunteerStatus.AVAILABLE,
         hall: hallToNumber[request.hall],
+        gender: request.gender,
       },
     });
     if (candidates.length === 0) {

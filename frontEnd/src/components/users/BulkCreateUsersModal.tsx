@@ -6,25 +6,32 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { useUsersStore } from '../../stores/users.store';
-import { UserRole } from '../../types/enums';
+import { Gender, UserRole } from '../../types/enums';
 
 const HALL_NUMBERS = [1, 2, 3, 4];
+
+interface NameRow {
+  name: string;
+  gender: Gender;
+}
 
 export function BulkCreateUsersModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const createBulk = useUsersStore((s) => s.createBulk);
   const [role, setRole] = useState<UserRole>(UserRole.VOLUNTEER);
   const [hall, setHall] = useState(1);
-  const [names, setNames] = useState<string[]>(['']);
+  const [rows, setRows] = useState<NameRow[]>([{ name: '', gender: Gender.MALE }]);
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
     setRole(UserRole.VOLUNTEER);
     setHall(1);
-    setNames(['']);
+    setRows([{ name: '', gender: Gender.MALE }]);
   };
 
-  const trimmedNames = names.map((n) => n.trim()).filter(Boolean);
-  const canSubmit = trimmedNames.length > 0 && !submitting;
+  const trimmedRows = rows
+    .map((r) => ({ name: r.name.trim(), gender: r.gender }))
+    .filter((r) => r.name.length > 0);
+  const canSubmit = trimmedRows.length > 0 && !submitting;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -34,7 +41,7 @@ export function BulkCreateUsersModal({ open, onClose }: { open: boolean; onClose
       await createBulk({
         role,
         hall,
-        users: trimmedNames.map((name) => ({ name })),
+        users: trimmedRows,
       });
       reset();
       onClose();
@@ -70,22 +77,38 @@ export function BulkCreateUsersModal({ open, onClose }: { open: boolean; onClose
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-slate-700">Names</label>
-          {names.map((name, i) => (
+          {rows.map((row, i) => (
             <div key={i} className="flex gap-2">
               <Input
                 autoFocus={i === 0}
                 placeholder="Jane Doe"
-                value={name}
+                value={row.name}
                 onChange={(e) =>
-                  setNames((prev) => prev.map((n, idx) => (idx === i ? e.target.value : n)))
+                  setRows((prev) =>
+                    prev.map((r, idx) => (idx === i ? { ...r, name: e.target.value } : r)),
+                  )
                 }
               />
-              {names.length > 1 && (
+              <Select
+                className="w-auto"
+                value={row.gender}
+                onChange={(e) =>
+                  setRows((prev) =>
+                    prev.map((r, idx) =>
+                      idx === i ? { ...r, gender: e.target.value as Gender } : r,
+                    ),
+                  )
+                }
+              >
+                <option value={Gender.MALE}>Male</option>
+                <option value={Gender.FEMALE}>Female</option>
+              </Select>
+              {rows.length > 1 && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => setNames((prev) => prev.filter((_, idx) => idx !== i))}
+                  onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}
                 >
                   Remove
                 </Button>
@@ -96,14 +119,14 @@ export function BulkCreateUsersModal({ open, onClose }: { open: boolean; onClose
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => setNames((prev) => [...prev, ''])}
+            onClick={() => setRows((prev) => [...prev, { name: '', gender: Gender.MALE }])}
           >
             + Add another
           </Button>
         </div>
 
         <Button type="submit" className="w-full" loading={submitting} disabled={!canSubmit}>
-          Create {trimmedNames.length > 1 ? `${trimmedNames.length} users` : 'user'}
+          Create {trimmedRows.length > 1 ? `${trimmedRows.length} users` : 'user'}
         </Button>
       </form>
     </Modal>

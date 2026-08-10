@@ -8,6 +8,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { Gender } from '../../../common/enums/gender.enum';
 import { UserRole } from '../../../common/enums/user-role.enum';
 
 export class UpdateUserDto {
@@ -21,6 +22,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
+
+  @ApiPropertyOptional({ enum: Gender })
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
 
   @ApiPropertyOptional({ example: 1, minimum: 1, maximum: 4 })
   @IsOptional()

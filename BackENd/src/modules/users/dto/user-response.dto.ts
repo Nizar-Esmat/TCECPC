@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Gender } from '../../../common/enums/gender.enum';
 import { UserRole } from '../../../common/enums/user-role.enum';
 import { VolunteerStatus } from '../../../common/enums/volunteer-status.enum';
 import { User } from '../entities/user.entity';
@@ -15,6 +16,9 @@ export class UserResponseDto {
 
   @ApiProperty({ enum: UserRole })
   role: UserRole;
+
+  @ApiProperty({ enum: Gender })
+  gender: Gender;
 
   @ApiProperty({ enum: VolunteerStatus })
   status: VolunteerStatus;
@@ -39,6 +43,7 @@ export class UserResponseDto {
     this.code = user.code;
     this.name = user.name;
     this.role = user.role;
+    this.gender = user.gender;
     this.status = user.status;
     this.capacity = user.capacity;
     this.hall = user.hall;

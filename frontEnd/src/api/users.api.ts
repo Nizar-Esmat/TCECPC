@@ -1,17 +1,18 @@
 import { client } from './client';
 import type { UserDto } from '../types/models';
-import type { UserRole, VolunteerStatus } from '../types/enums';
+import type { Gender, UserRole, VolunteerStatus } from '../types/enums';
 
 export interface CreateUserPayload {
   name: string;
   role: UserRole;
   hall: number;
+  gender: Gender;
 }
 
 export interface BulkCreateUsersPayload {
   role: UserRole;
   hall: number;
-  users: { name: string }[];
+  users: { name: string; gender: Gender }[];
 }
 
 export async function listUsers(): Promise<UserDto[]> {

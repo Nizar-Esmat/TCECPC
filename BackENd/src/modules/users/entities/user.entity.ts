@@ -1,5 +1,6 @@
 import { Column, DeleteDateColumn, Entity } from 'typeorm';
 import { AbstractEntity } from '../../../common/abstract/abstract.entity';
+import { Gender } from '../../../common/enums/gender.enum';
 import { UserRole } from '../../../common/enums/user-role.enum';
 import { VolunteerStatus } from '../../../common/enums/volunteer-status.enum';
 
@@ -13,6 +14,9 @@ export class User extends AbstractEntity {
 
   @Column({ type: 'enum', enum: UserRole })
   role: UserRole;
+
+  @Column({ type: 'enum', enum: Gender })
+  gender: Gender;
 
   @Column({
     type: 'enum',

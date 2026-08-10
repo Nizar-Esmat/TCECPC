@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
+import { Gender } from '../common/enums/gender.enum';
 import { UserRole } from '../common/enums/user-role.enum';
 import { UsersService } from '../modules/users/users.service';
 
@@ -35,6 +36,7 @@ async function seed(): Promise<void> {
       name: 'Competition Leader',
       role: UserRole.LEADER,
       hall: 1,
+      gender: Gender.MALE,
     });
     codes.push({ role: 'LEADER', name: leader.name, code: leader.code });
 
@@ -43,6 +45,7 @@ async function seed(): Promise<void> {
         name: VOLUNTEER_NAMES[i],
         role: UserRole.VOLUNTEER,
         hall: (i % 4) + 1,
+        gender: i % 2 === 0 ? Gender.MALE : Gender.FEMALE,
       });
       await usersService.updateCapacity(volunteer.id, {
         capacity: VOLUNTEER_CAPACITIES[i],

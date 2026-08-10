@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { randomInt } from 'crypto';
 import PDFDocument from 'pdfkit';
 import { QueryFailedError, Repository } from 'typeorm';
+import { Gender } from '../../common/enums/gender.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { VolunteerStatus } from '../../common/enums/volunteer-status.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
@@ -39,6 +40,7 @@ export class UsersService {
       name: dto.name,
       role: dto.role,
       hall: dto.hall,
+      gender: dto.gender,
     });
     return new UserResponseDto(saved);
   }
@@ -50,6 +52,7 @@ export class UsersService {
         name: item.name,
         role: dto.role,
         hall: dto.hall,
+        gender: item.gender,
       });
       results.push(new UserResponseDto(saved));
     }
@@ -57,9 +60,10 @@ export class UsersService {
   }
 
   async findAll(query: FindUsersQueryDto): Promise<UserResponseDto[]> {
-    const where: Partial<Pick<User, 'role' | 'status'>> = {};
+    const where: Partial<Pick<User, 'role' | 'status' | 'gender'>> = {};
     if (query.role) where.role = query.role;
     if (query.status) where.status = query.status;
+    if (query.gender) where.gender = query.gender;
 
     const users = await this.usersRepository.find({
       where,
@@ -78,6 +82,7 @@ export class UsersService {
     if (dto.name !== undefined) user.name = dto.name;
     if (dto.role !== undefined) user.role = dto.role;
     if (dto.hall !== undefined) user.hall = dto.hall;
+    if (dto.gender !== undefined) user.gender = dto.gender;
     const saved = await this.usersRepository.save(user);
     return new UserResponseDto(saved);
   }
@@ -173,6 +178,7 @@ export class UsersService {
     name: string;
     role: UserRole;
     hall: number;
+    gender: Gender;
   }): Promise<User> {
     for (let attempt = 1; attempt <= CODE_GENERATION_MAX_ATTEMPTS; attempt++) {
       const user = this.usersRepository.create({
@@ -180,6 +186,7 @@ export class UsersService {
         name: data.name,
         role: data.role,
         hall: data.hall,
+        gender: data.gender,
       });
 
       try {
